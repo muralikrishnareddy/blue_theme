@@ -1,0 +1,264 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+
+    	<menuitem id="menu_hr_appraisal" name="Appraisal" parent="hr.menu_hr_root" sequence="2"/>
+    	<!--<menuitem action="open_view_categ_form" id="menu_view_employee_category_form"
+            parent="hr.menu_hr_configuration" sequence="1" groups="base.group_no_one"/>-->
+            
+        <template id="assets_backend" name="appraisal css assets" inherit_id="web.assets_backend">
+
+            <xpath expr="." position="inside">
+
+                <link rel="stylesheet" href="/hr_appraisal_lyra/static/src/css/hr_appraisal.css"/>
+            </xpath>
+        </template>    
+            
+        <!--Appraisal Goals form view -->
+        <record id="view_hr_appraisal_goals_form" model="ir.ui.view">
+            <field name="name">hr.appraisal.goals.form</field>
+            <field name="model">hr.appraisal.goal</field>
+            <field name="arch" type="xml">
+                <form string="Goals">                    
+                    <sheet>
+                            <label for="name"/>
+                            <h1>
+                                <field name="name" required="1" colspan="4"/>
+                            </h1>                            
+                        
+                        <group>
+                            <group>
+                                <field name="mode" required="1"/>                                
+                            </group>
+                            <group>
+                                <field name="date" required="1"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <group string="Employees" attrs="{'invisible': [('mode', '!=', 'employee')]}">
+                            <field colspan="4" name="goal_emp_ids" nolabel="1" string="Employees" widget="many2many_tags"/>
+                        </group>
+                        <group string="Job Titles" attrs="{'invisible': [('mode', '!=', 'jobtitle')]}">
+                            <field colspan="4" name="goal_job_ids" nolabel="1" string="Jobs" widget="many2many_tags"/>
+                        </group>
+                        <group string="Departments" attrs="{'invisible': [('mode', '!=', 'department')]}">
+                            <field colspan="4" name="goal_dept_ids" nolabel="1" string="Departments" widget="many2many_tags"/>
+                        </group>
+                        <group string="Goals" attrs="{'invisible': [('mode', '=', False)]}">
+                          <field colspan="4" name="goal_line_ids" nolabel="1" widget="one2many_list" string="Goals">
+                            <tree editable='bottom' class="goal_lines_class">
+				<field name="sequence" required="1"/>
+				<field name="name" required="1"/>
+			    </tree>
+			    <form>
+			        <field name="sequence" required="1"/>
+				<field name="name" required="1"/>
+			    </form>
+                          </field>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_hr_appraisal_goals_tree" model="ir.ui.view">
+            <field name="name">hr.appraisal.goals.tree</field>
+            <field name="model">hr.appraisal.goal</field>
+            <field name="arch" type="xml">
+                <tree string="Goals">
+                    <field name="name"/>
+                    <field name="mode"/>
+                    <field name="date"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_hr_appraisal_goals_filter" model="ir.ui.view">
+            <field name="name">Goals</field>
+            <field name="model">hr.appraisal.goal</field>
+            <field name="arch" type="xml">
+                <search string="Goals">
+                    <field name="name" string="Name" filter_domain="[('name','ilike',self)]"/>
+                    <!--<filter domain="[('state','=','open')]" string="In Position"/>-->
+                    <group expand="0" string="Group By">
+                        <filter string="By Employee" icon="terp-personal" domain="[('mode','=','employee')]" context="{'group_by':'mode'}"/>
+                        <filter string="By Job Title" icon="terp-personal" domain="[('mode','=','jobtitle')]" context="{'group_by':'mode'}"/>
+                        <filter string="By Department" icon="terp-personal" domain="[('mode','=','department')]" context="{'group_by':'mode'}"/>
+                    </group>
+                </search>
+             </field>
+         </record> 
+            
+        <record id="action_hr_appraisal_goal" model="ir.actions.act_window">
+            <field name="name">Goals</field>
+            <field name="res_model">hr.appraisal.goal</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[]</field>
+            <field name="context">{}</field>
+            <field name="view_id" eval="False"/>
+            <field name="help" type="html">
+              <p class="oe_view_nocontent_create">
+                Click to add a new appraisal goal.
+              </p>
+            </field>
+        </record>
+        
+        <menuitem action="action_hr_appraisal_goal" id="menu_view_employee_appraisal_goals"
+            parent="hr.menu_hr_configuration" sequence="10"/>
+            
+        <record model="ir.ui.view" id="hr_appraisal_tree">
+            <field name="name">hr.appraisal.tree</field>
+            <field name="model">hr.appraisal</field>
+            <field name="arch" type="xml">
+                <tree string="Appraisal">
+                    <field name="name"/>
+                    <field name="employee_id"/>
+                    <field name="manager_id"/>
+                    <field name="goal_id"/>
+                    <field name="date"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record> 
+        
+        <record model="ir.ui.view" id="hr_appraisal_line_tree">
+            <field name="name">hr.appraisal.line.tree</field>
+            <field name="model">hr.appraisal.line</field>
+            <field name="arch" type="xml">
+                <tree string="Appraisal Line" context="'state':state">                    
+                    <field name="sequence"/>
+                    <field name="name"/>
+                    <field name="emp_answer"/>
+                    <field name="mgr_answer"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>     
+         
+            
+        <!--Employee Appraisal form view -->
+        <record id="view_hr_appraisal_form" model="ir.ui.view">
+            <field name="name">hr.appraisal.form</field>
+            <field name="model">hr.appraisal</field>
+            <field name="arch" type="xml">
+                <form string="Appraisals" context="{'state':state}">                    
+                    <header>
+                        <button name="send_to_employee" string="Send to Employee" type="object" states="draft,tomanager,tohrmanager" class="oe_highlight"/>
+                        <button name="send_to_manager" string="Send to Manager" type="object" states="toemployee,tohrmanager" class="oe_highlight"/>
+                        <button name="send_to_hr_manager" string="Send to HR Manager" type="object" states="tomanager" class="oe_highlight"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                            <label for="name"/>
+                            <h1>
+                                <field name="name" required="1"/>
+                            </h1>
+                        <group>
+                            <group>
+                                <field name="employee_id" required="1"/>
+                                <field name="goal_id" attrs="{'invisible': [('employee_id', '=', False)],'required': [('employee_id', '!=', False)]}" on_change="onchange_goal(goal_id)"/>
+                            </group>
+                            <group>
+                                <field name="date" required="1"/>
+                                <field name="manager_id" attrs="{'invisible': [('employee_id', '=', False)]}"/>
+                            </group>                            
+                        </group>
+                        <group>
+                            <group string="Goals" attrs="{'invisible': [('goal_id', '=', False)]}" class="appraisal_line_class">
+                                <field  colspan="4" name="line_ids" nolabel="1" widget="one2many_list" string="Goals" context="{'state':state}">
+		                    <tree editable="bottom">
+					<field name="sequence" required="1"/>
+					<field name="name" required="1"/>
+					<field name="emp_answer" />
+					<field name="mgr_answer"/>
+					<field name="state" invisible="1"/>
+				    </tree>
+				    <form>
+					<field name="sequence" required="1"/>
+					<field name="name" required="1"/>
+					<field name="emp_answer" />
+					<field name="mgr_answer"/>
+					<field name="state" invisible="1"/>
+				    </form>
+                                </field>
+                            </group>                            
+                        </group>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids" widget="mail_followers"/>
+                        <field name="message_ids" widget="mail_thread"/>
+                    </div>                    
+                </form>
+            </field>
+        </record>
+                    
+        <record id="action_hr_appraisal" model="ir.actions.act_window">
+            <field name="name">Appraisals</field>
+            <field name="res_model">hr.appraisal</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">[]</field>
+            <field name="context">{}</field>
+            <field name="view_id" eval="False"/>
+            <field name="help" type="html">
+              <p class="oe_view_nocontent_create">
+                Click to add a new employee appraisal.
+              </p>
+            </field>
+        </record>
+        
+        <menuitem action="action_hr_appraisal" id="menu_view_employee_appraisal"
+            parent="hr_appraisal_lyra.menu_hr_appraisal" sequence="1" groups="base.group_hr_manager"/>            
+                    
+        <record id="action_hr_appraisal_emps" model="ir.actions.act_window">
+            <field name="name">Employee Appraisals</field>
+            <field name="res_model">hr.appraisal</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="domain">['|','&amp;',('employee_id.user_id','=',uid),('state','=','toemployee'),'&amp;',('manager_id.user_id','=',uid),('state','=','tomanager')]</field>
+            <field name="context">{}</field>
+            <field name="view_id" eval="False"/>
+            <field name="help" type="html">
+              <p class="oe_view_nocontent_create">
+                Click to add a new employee appraisal.
+              </p>
+            </field>
+        </record>
+        
+        <menuitem action="action_hr_appraisal_emps" id="menu_view_employee_appraisal_employee"
+            parent="hr_appraisal_lyra.menu_hr_appraisal" sequence="4" groups="base.group_user,base.group_hr_user"/>
+        
+        <record id="hr_appraisal_lyra.menu_view_employee_appraisal_employee" model="ir.ui.menu">
+	    <field name="groups_id" eval="[(3,ref('base.group_hr_manager') )]"/>
+	</record>
+	    
+        <record model="ir.actions.act_window" id="action_hr_job_form">
+            <field name="name">Job Positions</field>
+            <field name="res_model">hr.job</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,form</field>
+            <field name="search_view_id" ref="hr.view_job_filter"/>
+            <field name="context">{}</field>
+            <field name="help" type="html">
+              <p class="oe_view_nocontent_create">
+                Click to define a new job position.
+              </p>
+            </field>
+        </record>
+
+        <menuitem name="Job Positions" id="menu_job_positions" action="action_hr_job_form" parent="hr.menu_hr_configuration" sequence="8"/>
+        
+        <record id="hr_hr_employee_view_form_appraisal" model="ir.ui.view">
+            <field name="name">hr.hr.employee.view.form_appraisal</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr.view_employee_form"/>
+            <field name="arch" type="xml">
+                <data>
+                    <xpath expr="//field[@name='coach_id']" position="after">
+                        <field name="manager"/>
+                    </xpath>
+                </data>
+            </field>
+        </record>
+            
+    </data>
+</openerp>

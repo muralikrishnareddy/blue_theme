@@ -1,0 +1,537 @@
+#from __future__ import division
+from openerp import models, fields, tools, api, _
+import time
+from lxml import etree
+import datetime
+from dateutil.relativedelta import relativedelta
+from datetime import datetime,timedelta
+import math
+import logging
+from dateutil.relativedelta import *
+from openerp import SUPERUSER_ID
+from datetime import datetime,timedelta
+from openerp.osv import osv
+import string
+import random
+
+_logger = logging.getLogger(__name__)
+
+
+class hr_appraisal(models.Model):
+    _name = "hr.appraisal"
+    _description = "Appraisal"
+    _inherit = ['mail.thread']
+        
+    @api.multi    
+    def _get_hr_mgr_group_id(self):
+        all_groups=self.env['res.groups']
+        all_categ =self.env['ir.module.category']
+        all_users =self.env['res.users']
+        c_ids = all_categ.search([('name','=','Human Resources')])
+        cids = []
+        for cid in c_ids:
+            cids.append(cid.id)
+        g_ids = all_groups.search([('category_id','in',cids),('name','=','Manager')])
+        return g_ids and str(g_ids[0].id) or '0'
+        
+    
+    name = fields.Char(string='Name',readonly="1", states={'draft': [('readonly', False)]})
+    date = fields.Date(string='Date',default=fields.Date.today(),readonly="1", states={'draft': [('readonly', False)]})
+    employee_id = fields.Many2one(comodel_name='hr.employee',string="Employee",readonly="1", states={'draft': [('readonly', False)]})
+    manager_id = fields.Many2one(related='employee_id.parent_id', store=True, readonly=True, copy=False,string="Manager")
+    goal_id = fields.Many2one(comodel_name='hr.appraisal.goal',string="Goal",readonly="1", states={'draft': [('readonly', False)]})
+    line_ids = fields.One2many(comodel_name='hr.appraisal.line', inverse_name='appraisal_id')
+    hrmgr_answer = fields.Text(string="Final Appreciation comments")
+    hrmgr_rating = fields.Many2one(comodel_name='hr.appraisal.rating',string="Overall Rating")
+    state = fields.Selection([('draft','Draft'),('toemployee','Sent to Employee'),('tomanager','Sent to Manager'),('tohrmanager','Sent to HR Manager'),('waitinterview','Ready for Final Interview'), ('done','Done')],string="Status", index=True, readonly=True, default='draft',
+        track_visibility='onchange', copy=False,)
+    hr_group_id = fields.Char(default=_get_hr_mgr_group_id)
+    
+    def create(self, cr, uid, vals, context=None):
+        if 'employee_id' in vals and vals['employee_id']:
+            emps = self.pool.get('hr.appraisal').search_read(cr, uid, [('employee_id','=',vals['employee_id']), ('state','!=','done')],['employee_id'])
+            if emps:
+                raise osv.except_osv(_('ERROR !!'),_('Already an Open Appraisal been Present for the Selected Employee. Please, Close the Existing Appraisal.'))
+        return super(hr_appraisal,self).create(cr, uid, vals, context=context)
+
+
+    def search(self, cr, user, args, offset=0, limit=None, order=None, context=None, count=False):
+        if context is None:
+            context = {}
+        userobj = self.pool.get('res.users').browse(cr, user, user, context=context) 
+        if args and args[0]=='|':
+            args.insert(0,'|')
+            args.append('&')
+            args.append(['hr_group_id', 'in', [str(g.id) for g in userobj.groups_id]])
+            args.append(['state', 'in', ['tohrmanager','waitinterview','done']])
+        res = super(hr_appraisal, self).search(cr, user, args, offset=offset, limit=limit, order=order,
+                                                                 context=context, count=count)
+        return res
+        
+    def read_group(self, cr, uid, domain, fields, groupby, offset=0, limit=None, context=None, orderby=False, lazy=True):
+        ''' Overwrite the read_group for group by'''
+        userobj = self.pool.get('res.users').browse(cr, uid, uid, context=context) 
+        if domain and domain[0]=='|':
+            domain.insert(0,'|')
+            domain.append('&')
+            domain.append(['hr_group_id', 'in', [str(g.id) for g in userobj.groups_id]])
+            domain.append(['state', 'in', ['tohrmanager','waitinterview','done']])        
+        res = super(hr_appraisal, self).read_group(cr, uid, domain, fields, groupby, offset=offset, limit=limit, context=context, orderby=orderby, lazy=lazy)
+        
+        return res
+    
+    @api.multi
+    def onchange_goal(self, goal_id):
+        ret = {'line_ids':[]}
+        for line in self.env['hr.appraisal.goal'].browse(goal_id).goal_line_ids:
+            ret['line_ids'].append((0, 0, {'goal_line_id':line.id}))
+        return {'value':ret}
+        
+    @api.multi
+    def return_tree_view(self):
+        def ref(module, xml_id):
+            proxy = self.pool.get('ir.model.data')
+            return proxy.get_object_reference(self.env.cr, self.env.uid, module, xml_id)
+
+        userobj = self.env['res.users'].browse(self.env.uid)
+        model, form_view_id = ref('hr_appraisal_lyra', 'view_hr_appraisal_form')
+        model, tree_view_id = ref('hr_appraisal_lyra', 'hr_appraisal_tree')
+        model, search_view_id = ref('hr_appraisal_lyra', 'view_hr_appraisal_filter')
+        domain =['|','&',('employee_id.user_id','=',self.env.uid),('state','=','toemployee'),'&',('manager_id.user_id','=',self.env.uid),('state','=','tomanager')]
+        if self.hr_group_id in [str(g.id) for g in userobj.groups_id]:
+            domain = []
+        views = [
+            (tree_view_id, 'tree'),
+            (form_view_id, 'form')]
+        return {
+            'name': _('Employee Appraisals'),
+            'type': 'ir.actions.act_window',
+            'view_type': 'form',
+            'view_mode': 'tree,form',
+            'res_model': 'hr.appraisal',
+            #'views': views,
+            'view_id': False,
+            'search_view_id': search_view_id,
+            'domain':domain
+            }
+    @api.multi
+    def send_to_employee(self):
+        self.write({'state': 'toemployee'})   
+        #Send Email to Employee with Access Credentials
+        self.notify_employee()  
+        self.send_employee_credentials()
+        return self.return_tree_view()
+        
+    @api.multi
+    def send_to_employee_mgr(self):
+        self.write({'state': 'toemployee'})   
+        #Send Email to Employee with Access Credentials
+        self.notify_employee_mgr()  
+        return self.return_tree_view()
+        
+    
+    def notify_employee(self,cr, uid, ids, context=None):
+        url = self.pool.get('ir.config_parameter').get_param(cr, uid, 'web.base.url') + '/web/login'
+        obj = self.browse(cr, uid, ids[0])
+        current_date=datetime.now()
+        emp =obj.employee_id
+        if context is None:
+            context = {}
+        body  = '<div  style="color:#365F91;font-size: 10pt;font-family:Helvetica;">\
+        <p>Hello,<p/>\
+        <p>Your work performance review form for %s-%s and appraisal for %s-%s has been created. In order to access the form, please follow the steps mentioned below:</p>\
+        <p>1. Your login credentials will be sent to you in a separate email.</p>\
+        <p>2. Navigate to Human Resources on Main Menu</p>\
+        <p>3. Click Employee Appraisal tab on to the left corner</p>\
+        <p>4. Click edit button on top, fill in the details in employee response</p>\
+        <p>5. Once you are done, click on send to manager</p>\
+        <p>6. Send the form on or before March 31, %s</p>\
+        <p>7. This form can be accessed out of Lyra network through VPN</p>\
+        <p>Kindly fill all the requested info in detail. We also encourage you to give your inputs, suggestion & opinion in "other comments" column. This will certainly help us understand and address issues appropriately. We value your inputs and suggestions, all details/information provided in the form will not be disclosed to third person other than your reporting manager and HR. </p>\
+        </div>'%(str(current_date.year-1),str(current_date.year)[-2:],str(current_date.year),str(current_date.year+1)[-2:],str(current_date.year))
+        post_values = {
+            'partner_ids': [emp.user_id.partner_id.id], #Send [] if not required to Send a Mail
+            'subject':"Appraisal Review form ready for Employee inputs",
+            'body': body,
+            'auto_delete':False,
+            'record_name':"Notification for Employee Appraisal"
+        } 
+        
+        dict(context).update({'auto_delete' : False})
+        msg_id = self.message_post(cr, SUPERUSER_ID, ids, type='email', subtype=False, context=context, **post_values)
+        return True
+        
+    def notify_employee_mgr(self,cr, uid, ids, context=None):
+        obj = self.browse(cr, uid, ids[0])
+        current_date=datetime.now()
+        emp =obj.employee_id
+        if context is None:
+            context = {}
+        for appr in self.browse(cr, uid, ids):
+            mail_temp_id = self.pool.get('email.template').search(cr, uid, [('name','=','Appraisal Return to you by Manager')])
+            temp_obj = self.pool.get('email.template').browse(cr, uid, mail_temp_id[0])            
+            if appr.employee_id.work_email:
+                mail_id = self.pool.get('email.template').send_mail(cr, uid, temp_obj.id, appr.id, force_send=True, context=context)
+        return True
+        
+       
+        
+    def send_employee_credentials(self,cr, uid, ids, context=None):
+        for rec in self.browse(cr, uid, ids, context=context):
+            if rec.employee_id:
+                exist = False
+                url = self.pool.get('ir.config_parameter').get_param(cr, uid, 'web.base.url') + '/web/login' 
+                #Notify Employee to Fill Appraisal and send his Credentials
+                superuser = self.pool.get('res.users').browse(cr, SUPERUSER_ID, SUPERUSER_ID)
+                if exist:
+                    body  = '<div  style="color:#365F91;font-size: 10pt;font-family:Helvetica;"><p>You are already having ERP Access. Use those Credentials to access the ERP System.</p></div>'
+                else: 
+                    body  = '<div  style="color:#365F91;font-size: 10pt;font-family:Helvetica;">\
+                        <p>Hello,</p>\
+                        <p>Your annual performance review form is available online. To access your form, use the below credentials:</p>\
+                        <p>URL: %s</p>\
+                        <p>Email: %s</p>\
+                        <p>Password: %s</p>\
+                        <p></p>\
+                        </div>'%(url,rec.employee_id.work_email and rec.employee_id.work_email or rec.employee_id.name,rec.employee_id.temp_pass)
+                post_values = {
+                    'partner_ids': [rec.employee_id.user_id.partner_id.id], #Send [] if not required to Send a Mail
+                    'subject':"Access to the Appraisal",
+                    'body': body,
+                    'record_name':"Credentials to Access ERP System"
+                }
+                msg_id = self.message_post(cr, SUPERUSER_ID, False, type='email', subtype='mail.mt_comment', context=context, **post_values)
+        return True  
+        
+        
+    def notify_manager(self,cr, uid, ids, context=None):
+        obj = self.browse(cr, uid, ids[0])
+        current_date=datetime.now()
+        emp = obj.employee_id
+        manager =obj.employee_id.parent_id
+        if context is None:
+            context = {}
+        for appr in self.browse(cr, uid, ids):
+            mail_temp_id = self.pool.get('email.template').search(cr, uid, [('name','=','Appraisal Received at Manager Notification')])
+            temp_obj = self.pool.get('email.template').browse(cr, uid, mail_temp_id[0])            
+            if appr.employee_id.parent_id.work_email:
+                mail_id = self.pool.get('email.template').send_mail(cr, uid, temp_obj.id, appr.id, force_send=True, context=context)
+        return True
+        
+    def notify_employee_appraisal_status(self,cr, uid, ids,status, context=None):
+        obj = self.browse(cr, uid, ids[0])
+        current_date=datetime.now()
+        emp = obj.employee_id
+        manager =obj.employee_id.parent_id
+        if context is None:
+            context = {}            
+        for appr in self.browse(cr, uid, ids):
+            mail_temp_id = self.pool.get('email.template').search(cr, uid, [('name','=','Appraisal forwarded for HR Manager Review')])
+            temp_obj = self.pool.get('email.template').browse(cr, uid, mail_temp_id[0])            
+            if appr.employee_id.work_email:
+                mail_id = self.pool.get('email.template').send_mail(cr, uid, temp_obj.id, appr.id, force_send=True, context=context)
+        return True
+            
+
+    @api.multi
+    def send_to_manager(self):
+        self.write({'state': 'tomanager'})
+        for line in self.line_ids:
+            if not line.name == 'Other Comments' and line.emp_answer == False:
+                raise osv.except_osv(_('ERROR !!'),_('Response is not entered for some Queries. Please, enter for them and then Submit.'))
+        self.notify_manager()          
+        return self.return_tree_view()
+
+    @api.multi
+    def send_to_hr_manager(self):
+        self.write({'state': 'tohrmanager'})
+        for line in self.line_ids:
+            if not line.name == 'Other Comments' and (line.mgr_answer == False or line.mgr_rating==False):
+                raise osv.except_osv(_('ERROR !!'),_('Response is not entered for some of the Queries. Please, enter for them and then Submit.')) 
+        self.notify_employee_appraisal_status('tohrmanager')             
+        return self.return_tree_view()
+        
+    @api.multi    
+    def ready_for_interview(self):    
+        self.write({'state': 'waitinterview'}) 
+        self.emp_appraisal_send_email()
+        return True
+        
+    @api.multi        
+    def button_done(self):
+        self.write({'state': 'done'}) 
+        return True
+    
+    @api.multi    
+    def emp_appraisal_send_email(self):
+        #Send a Mail
+        for appr in self.browse(self.ids):
+            mail_temp_id = self.pool.get('email.template').search(self.env.cr, self.env.uid, [('name','=','Employee Appraisal Details')])
+            temp_obj = self.pool.get('email.template').browse(self.env.cr, self.env.uid, mail_temp_id[0])            
+            if appr.employee_id.work_email:
+                mail_id = self.pool.get('email.template').send_mail(self.env.cr, self.env.uid, temp_obj.id, appr.id, force_send=True, context=self.env.context)
+        return True
+        
+    @api.multi
+    def button_resend(self):
+        return self.emp_appraisal_send_email()
+        
+    #For Report
+    def get_manager(self, obj):
+        return obj.manager_id and obj.manager_id.name or ''
+        
+    def get_details(self, obj):
+        objs=[]
+        if obj.send_details_emp:
+            if obj.send_details_emp == 'employee':
+                objs=[]
+                for line in obj.line_ids:
+                    objs.append(line)
+        return objs
+    
+    @api.multi    
+    def update_all_passwords(self):    
+        ret = False
+        exist = False
+        random_pwd = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(8))
+        emps = self.env['hr.employee'].search([])
+        for emp in emps:
+            random_pwd = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(8))
+            if emp.user_id and emp.user_id.id!=SUPERUSER_ID:
+                emp.user_id.password = random_pwd
+                #Store the Random generated password Temporarly in EMployee
+                emp.temp_pass = random_pwd
+        return True
+     
+        
+    
+class hr_appraisal_line(models.Model):
+    _name = "hr.appraisal.line"
+    _description = "Appraisal Line"
+    _order = "sequence"
+    
+    appraisal_id = fields.Many2one(comodel_name='hr.appraisal')
+    goal_line_id = fields.Many2one(comodel_name='hr.appraisal.goal.line')
+    name = fields.Text(related='goal_line_id.name', store=True, readonly=True, copy=False,string="Query")
+    sequence = fields.Integer(related='goal_line_id.sequence', store=True, readonly=True, copy=False)
+    emp_answer = fields.Text(string="Employee Response",readonly="1",states={'toemployee': [('readonly', False),('required', True)]})
+    mgr_answer = fields.Text(string="Manager Response",readonly="1",states={'tomanager': [('readonly', False),('required', True)]})
+    mgr_rating = fields.Many2one(comodel_name='hr.appraisal.rating',string="Rating",readonly="1",states={'tomanager': [('readonly', False),('required', True)]})
+    state = fields.Selection([('draft','Draft'),('toemployee','Sent to Employee'),('tomanager','Sent to Manager'),('tohrmanager','Sent to HR Manager'),('waitinterview','Waiting for Final Interview'), ('done','Done')],string="Status", readonly=True, default='draft', copy=False,related='appraisal_id.state', store=True)
+
+    
+    
+class hr_appraisal_goal(models.Model):
+    _name = "hr.appraisal.goal"
+    _description = "Goal"
+    
+    name = fields.Char(string='Name',)
+    date = fields.Date(string='Date',default=fields.Date.today())
+    active = fields.Boolean(string='Active',default="True")
+    goal_line_ids = fields.One2many(comodel_name='hr.appraisal.goal.line', inverse_name='goal_id')
+    
+    
+class hr_appraisal_goal_line(models.Model):
+    _name = "hr.appraisal.goal.line"
+    _description = "Goal Line"
+    _order = "sequence"
+    
+    goal_id = fields.Many2one(comodel_name='hr.appraisal.goal')
+    name = fields.Text(string='Query')
+    sequence = fields.Integer(string='Sequence')
+    
+    
+class hr_appraisal_bulk(models.Model):
+    _name = "hr.appraisal.bulk"
+    _description = "Bulk Appraisals"
+    
+    name = fields.Char(string='Name',readonly="1", states={'draft': [('readonly', False)]})
+    mode = fields.Selection([('employee','By Employee'),('jobtitle','By Job Title'),('department','By Department')],string='Mode',readonly="1", states={'draft': [('readonly', False)]})
+    date = fields.Date(string='Date',default=fields.Date.today(),readonly="1", states={'draft': [('readonly', False)]})
+    goal_emp_ids = fields.Many2many(comodel_name='hr.employee',relation='appraisal_goal_emps_rel',column1='goals_id',column2='emp_id',readonly="1", states={'draft': [('readonly', False)]})
+    goal_job_ids = fields.Many2many(comodel_name='hr.job',relation='appraisal_goal_jobs_rel',column1='goals_id',column2='job_id',readonly="1", states={'draft': [('readonly', False)]})
+    goal_dept_ids = fields.Many2many(comodel_name='hr.department',relation='appraisal_goal_depts_rel',column1='goals_id',column2='dept_id',readonly="1", states={'draft': [('readonly', False)]})
+    goal_id = fields.Many2one(comodel_name='hr.appraisal.goal',string="Goal",readonly="1", states={'draft': [('readonly', False)]})
+    line_ids = fields.One2many(comodel_name='hr.appraisal.bulk.line', inverse_name='bulk_id',readonly="1", states={'draft': [('readonly', False)]})
+    state = fields.Selection([('draft','Draft'), ('done','Done')],string="Status", index=True, readonly=True, default='draft',
+        track_visibility='onchange', copy=False,)
+    
+    @api.multi
+    def onchange_goal(self, goal_id):
+        ret = {'line_ids':[]}
+        for line in self.env['hr.appraisal.goal'].browse(goal_id).goal_line_ids:
+            ret['line_ids'].append((0, 0, {'goal_line_id':line.id}))
+        return {'value':ret}
+        
+    @api.multi
+    def onchange_mode(self, mode):
+        return {'value':{'goal_emp_ids':False,'goal_job_ids':False,'goal_dept_ids':False}}
+        
+    @api.multi
+    def onchange_job_title(self, goal_job_ids):
+        ret = []    
+        value = {}
+        searvals = self.env['hr.employee'].search_read([('job_id','in',goal_job_ids[0][2])],['name'])
+        for val in searvals:          
+            ret.append(val['id'])
+        value.update({'goal_emp_ids':[(6, 0, ret)]})
+        return {'value':value} 
+    
+    @api.multi
+    def onchange_department(self, goal_dept_ids):
+        ret = []    
+        value = {}
+        searvals = self.env['hr.employee'].search_read([('department_id','in',goal_dept_ids[0][2])],['name'])
+        for val in searvals:          
+            ret.append(val['id'])
+        value.update({'goal_emp_ids':[(6, 0, ret)]})
+        return {'value':value}
+        
+    @api.multi
+    def generate_appraisals(self):
+        current_date=datetime.now()
+        #Check whether any Employee having Open Appraisals 
+        
+        emps = self.env['hr.appraisal'].search_read([('employee_id','in',[emp.id for emp in self.goal_emp_ids]), ('state','!=','done')],['employee_id'])
+        if emps:
+            empls = ', '.join([emp['employee_id'][1] for emp in emps])
+            raise osv.except_osv(_('ERROR !!'),_('For the Employees "%s" Appraisals are already Created. Please, remove them from the Employee Selection.' % empls))
+        #Generate Individual Appraisals for each Employee
+        for emp in self.goal_emp_ids:
+            appraisal = self.env['hr.appraisal'].create({'name':'Appraisal of %s for %s - %s'%(emp.name,str(current_date.year),str(current_date.year+1)[-2:]), 'employee_id':emp.id, 'goal_id':self.goal_id.id, 'date':self.date})
+            #ret = appraisal.onchange_goal(appraisal.goal_id.id)
+            ret = {'line_ids':[]}
+            for line in self.line_ids:
+                self.env['hr.appraisal.line'].create({'goal_line_id':line.goal_line_id.id,'appraisal_id':appraisal.id})
+            
+        self.write({'state': 'done'})
+        return True
+    
+    
+class hr_appraisal_bulk_line(models.Model):
+    _name = "hr.appraisal.bulk.line"
+    _description = "Appraisal Bulk Line"
+    _order = "sequence"
+    
+    bulk_id = fields.Many2one(comodel_name='hr.appraisal.bulk')
+    goal_line_id = fields.Many2one(comodel_name='hr.appraisal.goal.line')
+    name = fields.Text(related='goal_line_id.name', store=True, readonly=True, copy=False,string="Query")
+    sequence = fields.Integer(related='goal_line_id.sequence', store=True, readonly=True, copy=False)
+    
+class hr_appraisal_rating(models.Model):
+    _name = "hr.appraisal.rating"
+    _description="Appraisal Rating"
+    _order = "sequence"
+    name = fields.Char(string="Name")
+    sequence = fields.Integer(string="Sequence")
+    
+class hr_employee(models.Model):
+    _inherit = "hr.employee"    
+    manager =  fields.Boolean(string='Is a Manager',default=False)
+    date_join = fields.Date(string="Join Date")
+    date_last_appraisal = fields.Date(string="Last Appraisal Date")
+    temp_pass = fields.Char(string="Random Password Generated")
+    
+    def create_related_user(self, cr, uid, emp_id, context=None):
+        """To Check whether Work Email user already created in the users list or not, if created update the Employee Related User with it, not created then Create a User and add update the Employee Related User"""
+        ret = False
+        exist = False
+        random_pwd = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(8))
+        if emp_id:
+            emp = self.browse(cr, uid, emp_id, context=context)
+            if emp.work_email:
+                serids = self.pool.get('res.users').search(cr, uid, [('partner_id.email','=',emp.work_email)])
+                if serids:
+                    ret = serids[0]
+                    exist = True
+            if not ret:
+                ret = self.pool.get('res.users').create(cr, uid, {'name':emp.name,'login':emp.work_email and emp.work_email or emp.name,'password':random_pwd,'email':emp.work_email}, context=context)    
+                emp.temp_pass = random_pwd
+            if ret:
+                emp.user_id = ret 
+        return True
+    
+    def create(self, cr, uid, vals, context=None):
+        ret = super(hr_employee,self).create(cr, uid, vals, context=context)
+        self.create_related_user(cr, uid, ret, context=context)        
+        return ret
+        
+class mail_mail(osv.Model):
+    """ Update of mail_mail class, to add the signin URL to notifications. """
+    _inherit = 'mail.mail'
+
+    def _get_partner_access_link(self, cr, uid, mail, partner=None, context=None):
+        return None
+        
+    def send(self, cr, uid, ids, auto_commit=False, raise_exception=False, context=None):
+        from_queue = False
+        if context is None:
+            context = {} 
+        for mail in self.browse(cr, SUPERUSER_ID, ids, context=context):
+            if mail.model and mail.model.strip()=='hr.appraisal' and mail.subject.strip() == 'Notification for Employee Appraisal':
+                mail.auto_delete = False   
+        if context.has_key('from_queue') and context['from_queue']:
+            user = self.pool.get("res.users").browse(cr, SUPERUSER_ID, SUPERUSER_ID, context=context)
+            if ids and len(ids)>0:
+                out_mail_count = 1
+                ids = sorted(ids)[:out_mail_count]
+            return super(mail_mail,self).send(cr, uid, ids, auto_commit=auto_commit, raise_exception=raise_exception, context=context)    
+        return True    
+        
+    @api.cr_uid
+    def process_email_queue(self, cr, uid, ids=None, context=None):
+        if context is None:
+            context = {} 
+        context['from_queue'] = True
+        return super(mail_mail,self).process_email_queue(cr, uid, ids=ids, context=context) 
+        
+        
+class mail_notification(osv.Model):
+    """ Class holding notifications pushed to partners. Followers and partners
+        added in 'contacts to notify' receive notifications. """
+    _inherit = 'mail.notification'
+    def get_signature_footer(self, cr, uid, user_id, res_model=None, res_id=None, context=None, user_signature=True):
+        """ Format a standard footer for notification emails (such as pushed messages
+            notification or invite emails).
+            Format:
+                <p>--<br />
+                    Administrator
+                </p>
+                <div>
+                    <small>Sent from <a ...>Your Company</a> using <a ...>OpenERP</a>.</small>
+                </div>
+        """
+        footer = ""
+        if not user_id:
+            return footer
+
+        # add user signature
+        user = self.pool.get("res.users").browse(cr, SUPERUSER_ID, [user_id], context=context)[0]
+        if user_signature:
+            if user.signature:
+                signature = user.signature
+            else:
+                signature = "--<br />%s" % user.name
+            signature+= 'add_to_footer' in context and context['add_to_footer'] or ''
+            footer = tools.append_content_to_html(footer, signature, plaintext=False)
+
+        # add company signature
+        if user.company_id.website:
+            website_url = ('http://%s' % user.company_id.website) if not user.company_id.website.lower().startswith(('http:', 'https:')) \
+                else user.company_id.website
+            company = "<a style='color:inherit' href='%s'>%s</a>" % (website_url, user.company_id.name)
+        else:
+            company = user.company_id.name
+        sent_by = _('Sent by %(company)s using %(odoo)s')
+
+        signature_company = '<br /><small>%s</small>' % (sent_by % {
+            'company': company,
+            'odoo': "<a style='color:inherit' href='https://www.odoo.com/'>Odoo</a>"
+        })
+        #footer = tools.append_content_to_html(footer, signature_company, plaintext=False, container_tag='div')
+
+        return footer
+    
+    
+    
+

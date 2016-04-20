@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <report 
+            id="report_hr_appraisal_lyra"
+            string="Employee Appraisal Details"
+            model="hr.appraisal" 
+            report_type="qweb-pdf"
+            file="hr_appraisal_lyra.report_hr_appraisal" 
+            name="hr_appraisal_lyra.report_hr_appraisal" 
+            attachment="(object.employee_id.name+'.pdf')"
+            menu="True"
+        />
+    </data>
+</openerp>

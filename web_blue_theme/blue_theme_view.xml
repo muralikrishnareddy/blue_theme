@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<openerp>
+    <data>
+        <template id="assets_backend" name="blue color theme" inherit_id="web.assets_backend">
+
+            <xpath expr="." position="inside">
+
+                <link rel="stylesheet" href="/web_blue_theme/static/src/css/style.css"/>
+            </xpath>
+        </template>                
+    </data>
+</openerp>
+

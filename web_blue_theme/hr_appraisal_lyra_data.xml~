@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+    <data noupdate="1">
+
+        <!-- Email template for Employee Appraisal -->
+        <record id="hr_emp_appraisal_email" model="email.template">
+            <field name="name">Employee Appraisal Details</field>
+            <field name="model_id" ref="hr_appraisal_lyra.model_hr_appraisal"/>
+            <field name="email_from"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="reply_to"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="email_to">${object.employee_id.work_email|safe}</field>
+            <field name="subject">Appraisal up for Discussion</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="report_template" ref="report_hr_appraisal_lyra"/>
+            <field name="report_name">${object.employee_id.name.replace(' ','_')}</field>
+            <field name="body_html"><![CDATA[
+            <div  style="color:#365F91;font-size: 10pt;font-family:Helvetica;">
+<p>Dear ${object.employee_id.name},</p>
+<p>Thank you for submitting your performance review form. Your appraisal process is ready for final discussion and we will notify you the schedule for the same.</p>
+<p>For your convenience, attached your form with the email.</p>
+<p></p></div>
+<span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Thank you,</span></b></span><div style="color:#365F91;font-size: 10pt;font-family:Helvetica;&gt;
+
+&lt;p class=" msonormal=""><span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Lyra Infosystems Pvt. Ltd.</span></b></span><br><p></p>
+
+</div>
+]]></field>
+        </record>
+        
+        <!-- Email template for Employee Appraisal -->
+        <record id="hr_emp_appraisal_manager_return" model="email.template">
+            <field name="name">Appraisal Return to you by Manager</field>
+            <field name="model_id" ref="hr_appraisal_lyra.model_hr_appraisal"/>
+            <field name="email_from"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="reply_to"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="email_to">${object.employee_id.work_email|safe}</field>
+            <field name="subject">Appraisal Return to you by Manager</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html"><![CDATA[
+            <div  style="color:#365F91;font-size: 10pt;font-family:Helvetica;">
+        <p>Hello,<p/>
+        <p>Your Appraisal has been sent back to you. Go through the Manager comments and fill the Appraisal form accordingly and send back to Manager.</p>
+        </div>
+<span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Thank you,</span></b></span><div style="color:#365F91;font-size: 10pt;font-family:Helvetica;&gt;
+
+&lt;p class=" msonormal=""><span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Lyra Infosystems Pvt. Ltd.</span></b></span><br><p></p>
+
+</div>
+]]></field>
+        </record>
+	
+	<!-- Email template for Employee Appraisal -->
+        <record id="hr_emp_appraisal_manager_notify" model="email.template">
+            <field name="name">Notify Manager about Appraisal Receival</field>
+            <field name="model_id" ref="hr_appraisal_lyra.model_hr_appraisal"/>
+            <field name="email_from"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="reply_to"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="email_to">${object.employee_id.parent_id.work_email|safe}</field>
+            <field name="subject"><![CDATA[Appraisal Received from ${object.employee_id.name} for Review]]></field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html"><![CDATA[
+            <div  style="color:#365F91;font-size: 10pt;font-family:Helvetica;">
+        <p>Hello,<p/>
+        <p>Appraisal received from ${object.employee_id.name} for Manager Review.</p>
+        </div>
+<span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Thank you,</span></b></span><div style="color:#365F91;font-size: 10pt;font-family:Helvetica;&gt;
+
+&lt;p class=" msonormal=""><span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Lyra Infosystems Pvt. Ltd.</span></b></span><br><p></p>
+
+</div>
+]]></field>
+        </record>
+<!-- Email template for Employee Appraisal -->
+        <record id="hr_emp_appraisal_status_notify" model="email.template">
+            <field name="name">Appraisal forwarded for HR Manager Review</field>
+            <field name="model_id" ref="hr_appraisal_lyra.model_hr_appraisal"/>
+            <field name="email_from"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="reply_to"><![CDATA[${object.employee_id.user_id.company_id.name} <${(object.employee_id.user_id.company_id.email or user.email)|safe}>]]></field>
+            <field name="email_to">${object.employee_id.work_email|safe}</field>
+            <field name="subject">Appraisal forwarded for HR Manager Review</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html"><![CDATA[
+            <div  style="color:#365F91;font-size: 10pt;font-family:Helvetica;">
+        <p>Hello,<p/>
+        <p>Your Appraisal has been Forwarded for HR Manager Review.</p>
+        </div>'
+<span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Thank you,</span></b></span><div style="color:#365F91;font-size: 10pt;font-family:Helvetica;&gt;
+
+&lt;p class=" msonormal=""><span style="mso-bookmark:_MailAutoSig"><b style="mso-bidi-font-weight:
+normal"><span style='font-size:10.0pt;mso-bidi-font-size:11.0pt;mso-ascii-font-family:
+Calibri;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:"Times New Roman";
+mso-hansi-font-family:Calibri;mso-hansi-theme-font:minor-latin;color:black;
+mso-no-proof:yes'>Lyra Infosystems Pvt. Ltd.</span></b></span><br><p></p>
+
+</div>
+]]></field>
+        </record>
+
+    </data>
+</openerp>
+
