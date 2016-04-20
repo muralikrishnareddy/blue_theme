@@ -1,0 +1,286 @@
+
+/*For Top Menu*/
+.navbar-inverse {
+  background-color: #3C73AA;
+  border-color: #0D4F8B;
+}
+.navbar-inverse .navbar-brand {
+  color: #777;
+}
+.navbar-inverse .navbar-brand:hover,
+.navbar-inverse .navbar-brand:focus {
+  color: #fff;
+  background-color: transparent;
+}
+.navbar-inverse .navbar-text {
+  color: #BFEFFF;
+}
+.navbar-inverse .navbar-nav > li > a {
+  color: #BFEFFF;
+}
+.navbar-inverse .navbar-nav > li > a:hover,
+.navbar-inverse .navbar-nav > li > a:focus {
+  color: #67C8FF;
+  background-color: transparent;
+}
+.navbar-inverse .navbar-nav > .active > a,
+.navbar-inverse .navbar-nav > .active > a:hover,
+.navbar-inverse .navbar-nav > .active > a:focus {
+  color: #fff;
+  background-color: #26466D;
+}
+.navbar-inverse .navbar-nav > .disabled > a,
+.navbar-inverse .navbar-nav > .disabled > a:hover,
+.navbar-inverse .navbar-nav > .disabled > a:focus {
+  color: #444;
+  background-color: transparent;
+}
+.navbar-inverse .navbar-toggle {
+  border-color: #333;
+}
+.navbar-inverse .navbar-toggle:hover,
+.navbar-inverse .navbar-toggle:focus {
+  background-color: #333;
+}
+.navbar-inverse .navbar-toggle .icon-bar {
+  background-color: #fff;
+}
+.navbar-inverse .navbar-collapse,
+.navbar-inverse .navbar-form {
+  border-color: #101010;
+}
+.navbar-inverse .navbar-nav > .open > a,
+.navbar-inverse .navbar-nav > .open > a:hover,
+.navbar-inverse .navbar-nav > .open > a:focus {
+  color: #fff;
+  background-color: #26466D;
+}
+@media (max-width: 767px) {
+  .navbar-inverse .navbar-nav .open .dropdown-menu > .dropdown-header {
+    border-color: #080808;
+  }
+  .navbar-inverse .navbar-nav .open .dropdown-menu .divider {
+    background-color: #080808;
+  }
+  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {
+    color: #777;
+  }
+  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:hover,
+  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:focus {
+    color: #fff;
+    background-color: transparent;
+  }
+  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a,
+  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:hover,
+  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:focus {
+    color: #fff;
+    background-color: #080808;
+  }
+  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a,
+  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:hover,
+  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:focus {
+    color: #444;
+    background-color: transparent;
+  }
+}
+.navbar-inverse .navbar-link {
+  color: #777;
+}
+.navbar-inverse .navbar-link:hover {
+  color: #fff;
+}
+.navbar-inverse .btn-link {
+  color: #777;
+}
+.navbar-inverse .btn-link:hover,
+.navbar-inverse .btn-link:focus {
+  color: #fff;
+}
+.navbar-inverse .btn-link[disabled]:hover,
+fieldset[disabled] .navbar-inverse .btn-link:hover,
+.navbar-inverse .btn-link[disabled]:focus,
+fieldset[disabled] .navbar-inverse .btn-link:focus {
+  color: #444;
+}
+/*For Left side Menu background color*/
+.openerp .nav-pills > li.active > a, .openerp a.list-group-item.active > a {
+  background-color: #3A66A7;
+  color: white;
+  border-radius: 0;
+}
+.openerp .nav-pills > li.active a:hover, .openerp .nav-pills > li.active a:focus, .openerp a.list-group-item.active a:hover, .openerp a.list-group-item.active a:focus {
+  background-color: #3A66A7;
+}
+/*For Left side Group menus*/
+.openerp .oe_secondary_menu_section {
+  font-weight: bold;
+  margin-left: 8px;
+  color: #1874CD;
+}
+/* To change alternate color of List View Row*/
+.openerp .oe_list_content > tbody > tr:nth-child(odd) {
+  background-color: #f0f0fa;
+  background-color: #F0F9FF;
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#f0f0fa), to(#F0F9FF));
+  background-image: -webkit-linear-gradient(top, #f0f0fa, #F0F9FF);
+  background-image: -moz-linear-gradient(top, #f0f0fa, #F0F9FF);
+  background-image: -ms-linear-gradient(top, #f0f0fa, #F0F9FF);
+  background-image: -o-linear-gradient(top, #f0f0fa, #F0F9FF);
+  background-image: linear-gradient(to bottom, #f0f0fa, #F0F9FF);
+}
+.openerp .ui-widget-content a {
+  color: #1874CD;
+}
+.openerp .oe_stat_button .stat_button_icon {
+  color: #1874CD;
+  font-size: 24px;
+  padding: 0px 3px;
+  width: 37px;
+  text-align: center;
+}
+.openerp .oe_stat_button:hover {
+  background: #1874CD;
+  color: white;
+}
+.openerp .oe_button.oe_link span {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  -moz-border-radius: 0;
+  -webkit-border-radius: 0;
+  border-radius: 0;
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  color: #1874CD;
+  font-weight: bold;
+}
+.openerp .oe_tag_dark {
+  background: #1874CD;
+  color: #eeeeee;
+}
+/* To Change the Color of All the Links*/
+.openerp .oe_application a {
+  color: #1874CD;
+}
+/* To Change the Color of Breadcrumb when we are in form view*/
+.openerp .oe_view_manager table.oe_view_manager_header h2 a {
+  color: #1874CD;
+}
+.openerp .oe_searchview .oe-autocomplete ul li.oe-selection-focus {
+  background-color: #1874CD;
+  color: white;
+}
+.openerp .oe_searchview_drawer dt {
+  color: #1874CD;
+  font-size: 13px;
+  line-height: 24px;
+}
+/* Updates the color of Group String*/
+.openerp .oe_horizontal_separator {
+  font-weight: bold;
+  font-size: 20px;
+  margin: 15px 0px 10px 0px;
+  color: #1874CD;
+}
+.openerp .oe_fileupload .oe_add button.oe_attach {
+  width: 24px;
+  background: transparent;
+  color: #1874CD;
+  box-shadow: none;
+  border: none;
+  text-shadow: none;
+}
+.openerp .oe_fileupload .oe_add .oe_attach_label {
+  color: #1874CD;
+  margin-left: -3px;
+}
+.openerp ul.oe_form_status_clickable li > .label {
+  color: #1874CD;
+}
+.openerp .nav-pills > li.active > a, .openerp a.list-group-item.active > a {
+  background-color: #1874CD;
+  color: white;
+  border-radius: 0;
+}
+.openerp .nav-pills > li.active a:hover, .openerp .nav-pills > li.active a:focus, .openerp a.list-group-item.active a:hover, .openerp a.list-group-item.active a:focus {
+  background-color: #1874CD;
+}
+.openerp .nav-pills > li.active .badge, .openerp a.list-group-item.active .badge {
+  background-color: white;
+  color: #1874CD;
+  text-shadow: none;
+}
+.openerp .badge {
+  font-weight: normal;
+  font-size: 11px;
+  background-color: #1874CD;
+}
+.ui-menu .ui-menu-item a.ui-state-hover, .ui-menu .ui-menu-item a.ui-state-active {
+  background: #1874CD;
+}
+.openerp {
+  padding: 0;
+  margin: 0;
+  font-family: "Lucida Grande", Helvetica, Verdana, Arial, sans-serif;
+  color: #4c4c4c;
+  font-size: 13px;
+  background: #F8F8FF;
+  /* http://www.quirksmode.org/dom/inputfile.html
+   * http://stackoverflow.com/questions/2855589/replace-input-type-file-by-an-image
+   */
+}
+.openerp .oe_leftbar {
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -ms-flex-direction: column;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -ms-flex: 0 0 auto;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  -webkit-flex-grow: 0;
+  flex-grow: 0;
+  width: 220px;
+  height: 100%;
+  background: #F8F8FF;
+  border-right: 1px solid #afafb6;
+  position: relative;
+  display: inline-block\9;
+  vertical-align: top\9;
+}
+.openerp .oe_list_content > thead {
+  border-bottom: 2px solid #cacaca;
+  background: #F8F8FF;
+  vertical-align: top;
+}
+.openerp .oe_list_content > tfoot {
+  border-top: 2px solid #cacaca;
+  border-bottom: 1px solid #cacaca;
+  background: #F8F8FF;
+  font-weight: bold;
+}
+.openerp .oe_leftbar .oe_footer {
+  background: #F8F8FF;
+  text-align: center;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+/* View Types at Top Right Corner image background*/
+.openerp .oe_view_manager table.oe_view_manager_header .oe_button_group .active {
+  background: #999999;
+  -moz-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) inset;
+  -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) inset;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) inset;
+}
+/*Back ground of Below Top Menu */
+.openerp .oe_view_manager_current > .oe_view_manager_header {
+  border-bottom: 1px solid #cacaca;
+  background-color: #F8F8FF;
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#fcfcfc), to(#F8F8FF));
+  background-image: -webkit-linear-gradient(top, #fcfcfc, #F8F8FF);
+  background-image: -moz-linear-gradient(top, #fcfcfc, #F8F
